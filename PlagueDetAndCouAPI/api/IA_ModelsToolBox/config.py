@@ -5,9 +5,9 @@ import skimage.draw
 
 
 
-from mrcnn import visualize
-from mrcnn.config import Config
-from mrcnn import model as modellib
+from IA_ModelsToolBox.mrcnn import visualize
+from IA_ModelsToolBox.mrcnn.config import Config
+from IA_ModelsToolBox.mrcnn import model as modellib
 
 
 model_filename = "mask_rcnn_polilla_0017.h5"
