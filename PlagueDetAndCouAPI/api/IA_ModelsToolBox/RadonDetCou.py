@@ -1,49 +1,44 @@
 """Module to provide a toolbox with AI algorithms in order to make predictions
 about detecting and couting radon222 marks on images
 """
-
+from config import *
 import sys
 import os
 from abc import ABC, abstractmethod
-
+import cv2
 class DetCouPredOperations():
     """Call this class to build an interface to prediction operation classes
     """
 
     @abstractmethod
-    def operation(**kwargs):
+    def operation(self,**kwargs):
         pass
 
 class get_radon_image(DetCouPredOperations):
     """Call this class and return the radon image"""
 
-    def operation(**kwargs):
+    def operation(self,**kwargs):
         pred_dict = kwargs
         pred_dict["radon_image_name"] = "testimage1.jpg"
-        #pred_dict["error"] = 1
-        #pred_dict["message"] = "Error en get_radon_img"
-
         return pred_dict
 
     def __str__():
         return "radon_img"
 
 class make_detection_prediction(DetCouPredOperations):
-    """Call this class to make a detection prediction of radon marks
-    and return a dictionary getting the img and radon222 marks coordinates
-    as well as the error and a message
-    """
+    model = modellib.MaskRCNN(mode="inference", config=inference_config,  model_dir='logs')
+    def __init__(self):
+        model_path = os.path.join('logs', model_filename)
+        self.model.load_weights(model_filename, by_name=True)
 
-    def operation(**kwargs):
+    def operation(self,**kwargs):
         pred_dict = kwargs
-        pred_dict["dete_pred"] = {"pred_1": [1,2,3,4],
-                                  "pred_2": [4,3,2,1],
-                                 }
-        #pred_dict["error"] = 2
-        #pred_dict["message"] = "Error en make_detection_prediction" 
-
-        return pred_dict
-
+        result=self.model.detect([cv2.imread(pred_dict['input_img_path'])],verbose=1)[0]
+        
+        return {
+            "tot_pa":len(result['class_name']),
+            "tot_pb":len(result['class_name'])
+        }
     def __str__():
         return "dete_pred"
 
@@ -53,7 +48,7 @@ class make_couting_operation(DetCouPredOperations):
     the number thereof as well as an error and a message
     """
 
-    def operation(**kwargs):
+    def operation(self,**kwargs):
         pred_dict = kwargs
         pred_dict["coun_pred"] = 20
         #pred_dict["error"] = 3
@@ -71,18 +66,13 @@ class DetCouPredProcedure:
     """
 
     @staticmethod
-    def call_operations(**kwargs):
-        predictions_dict = {}
-        predictions_dict["radon_image_path"] = kwargs["radon_image_path"]
-        predictions_dict["error"] = 0
-        predictions_dict["message"] = "No hay error"
-
+    def call_operations(self,**kwargs):
         for operation in DetCouPredOperations.__subclasses__():
-            predictions_dict = operation.operation(**predictions_dict)
-            if predictions_dict['error'] != 0:
-                break
-
-        return predictions_dict
+            kwargs = operation.operation(**kwargs)
+        return {
+            "tot_pa":kwargs["tot_pa"],
+            "tot_pb":kwargs["tot_pb"]
+        }
 
 class RadonDetCouModel():
     """This function should be called from view module to get the prediction
