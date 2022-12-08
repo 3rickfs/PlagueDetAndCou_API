@@ -48,9 +48,38 @@ class make_detection_prediction(DetCouPredOperations):
     
     def operation(**kwargs):
         pred_dict = kwargs
-        result=pred_dict["model"].detect([pred_dict["plague_image"]], verbose=1)
-        pred_dict["dete_pred"] = {"tot_pa": len(result[0]['rois'])}
-        return pred_dict
+        result=pred_dict["model"].detect([pred_dict["plague_image"]], verbose=1)[0]
+        resultado={'sucess':True,"plagas":[{
+                    "Plaga":"elasmopalpus",
+                    "cantidad":0,
+                    "ubicacion":[]
+                },{
+                    "Plaga":"spodóptera",
+                    "cantidad":0,
+                    "ubicacion":[]
+                }]}
+        for i,mask in enumerate(result['masks']):
+            cnts,_ = cv2.findContours(mask.astype(np.uint8))
+            area = cv2.contourArea(cnts[0])
+            if area < 2000:
+                resultado['plagas'][0]['cantidad']=resultado['plagas'][0]['cantidad']+1
+                resultado['plagas'][0]['ubicaion'].append({
+                    "x":result['rois'][i][1],
+                    "y":result['rois'][i][0],
+                    "alto":abs(result['rois'][i][0]-result['rois'][i][2]),
+                    "ancho":abs(result['rois'][i][1]-result['rois'][i][3])
+                })
+            else:
+                resultado['plagas'][1]['cantidad']=resultado['plagas'][1]['cantidad']+1
+                resultado['plagas'][1]['ubicaion'].append({
+                    "x":result['rois'][i][1],
+                    "y":result['rois'][i][0],
+                    "alto":abs(result['rois'][i][0]-result['rois'][i][2]),
+                    "ancho":abs(result['rois'][i][1]-result['rois'][i][3])
+                })
+                
+        #pred_dict["dete_pred"] = {"tot_pa": len(result[0]['rois'])}
+        return resultado
 
     def __str__():
         return "dete_pred"
