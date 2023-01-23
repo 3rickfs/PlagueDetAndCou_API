@@ -50,18 +50,27 @@ class make_detection_prediction(DetCouPredOperations):
         pred_dict = kwargs
         result=pred_dict["model"].detect([pred_dict["plague_image"]], verbose=1)[0]
         resultado={'sucess':True,"plagas":[{
-                    "Plaga":"elasmopalpus",
+                    "Plaga":"Elasmopalpus",
                     "cantidad":0,
                     "ubicacion":[]
                 },{
-                    "Plaga":"spodóptera",
+                    "Plaga":"Spodoptera",
                     "cantidad":0,
                     "ubicacion":[]
                 }]}
-        for i,mask in enumerate(result['masks']):
-            cnts,_ = cv2.findContours(mask.astype(np.uint8))
-            area = cv2.contourArea(cnts[0])
-            if area < 2000:
+        cos=list()
+        for i in range(len(result['masks'][0,0,:])-1):
+            mask1   = (r['masks'][:,:,i]*255).astype(np.uint8)
+            mask2   = (r['masks'][:,:,i+1]*255).astype(np.uint8)
+            y,x,h,w=r['rois'][i]
+            cnts1,_ = cv2.findContours(mask1[y:h,x:w],cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            y,x,h,w=r['rois'][i+1]
+            cnts2,_ = cv2.findContours(mask2[y:h,x:w],cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            area1   = cv2.contourArea(cnts1[0])
+            area2   = cv2.contourArea(cnts2[0])
+            co      = area1/area2            
+            if 1 > co:
+                cos.append(1)
                 resultado['plagas'][0]['cantidad']=resultado['plagas'][0]['cantidad']+1
                 resultado['plagas'][0]['ubicaion'].append({
                     "x":result['rois'][i][1],
@@ -69,7 +78,9 @@ class make_detection_prediction(DetCouPredOperations):
                     "alto":abs(result['rois'][i][0]-result['rois'][i][2]),
                     "ancho":abs(result['rois'][i][1]-result['rois'][i][3])
                 })
+                
             else:
+                cos.append(2)
                 resultado['plagas'][1]['cantidad']=resultado['plagas'][1]['cantidad']+1
                 resultado['plagas'][1]['ubicaion'].append({
                     "x":result['rois'][i][1],
@@ -78,7 +89,13 @@ class make_detection_prediction(DetCouPredOperations):
                     "ancho":abs(result['rois'][i][1]-result['rois'][i][3])
                 })
                 
-        #pred_dict["dete_pred"] = {"tot_pa": len(result[0]['rois'])}
+        p=len(cos)
+        if cos[p-1] == 1:
+            resultado['plagas'][0]['cantidad']=resultado['plagas'][0]['cantidad']+1
+        else:
+            resultado['plagas'][1]['cantidad']=resultado['plagas'][0]['cantidad']+1
+          
+        
         return resultado
 
     def __str__():
